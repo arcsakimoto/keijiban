@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<!--
+  ============================================================
+  My Prompt Library - プロンプト保存・管理Webサービス
+  ============================================================
+  概要: お気に入りのプロンプトを保存・整理できるWebアプリ
+  機能: 追加 / 一覧表示 / 編集 / 削除 / カテゴリ分類 / コピー
+  保存先: ブラウザのローカルストレージ
+  対応: レスポンシブ / ダークモード
+  ============================================================
+-->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Prompt Library</title>
+<style>
+/* ===== CSS変数（ライトモード） ===== */
+:root {
+  --bg-gradient-1: #667eea;
+  --bg-gradient-2: #764ba2;
+  --card-bg: rgba(255, 255, 255, 0.95);
+  --card-shadow: rgba(0, 0, 0, 0.1);
+  --text-primary: #2d3748;
+  --text-secondary: #718096;
+  --text-muted: #a0aec0;
+  --border: #e2e8f0;
+  --input-bg: #f7fafc;
+  --input-border: #e2e8f0;
+  --input-focus: #667eea;
+  --btn-primary: linear-gradient(135deg, #667eea, #764ba2);
+  --btn-primary-hover: linear-gradient(135deg, #5a6fd6, #6a4292);
+  --btn-danger: #e53e3e;
+  --btn-danger-hover: #c53030;
+  --btn-edit: #ed8936;
+  --btn-edit-hover: #dd6b20;
+  --btn-copy: #48bb78;
+  --btn-copy-hover: #38a169;
+  --badge-bg: rgba(102, 126, 234, 0.1);
+  --badge-text: #667eea;
+  --modal-overlay: rgba(0, 0, 0, 0.5);
+  --scrollbar-track: #f1f1f1;
+  --scrollbar-thumb: #c1c1c1;
+  --empty-icon: #cbd5e0;
+  --category-all: #667eea;
+  --category-work: #e53e3e;
+  --category-study: #48bb78;
+  --category-creative: #ed8936;
+  --category-daily: #38b2ac;
+  --category-other: #a0aec0;
+}
+
+/* ===== ダークモード ===== */
+[data-theme="dark"] {
+  --bg-gradient-1: #1a1a2e;
+  --bg-gradient-2: #16213e;
+  --card-bg: rgba(30, 30, 50, 0.95);
+  --card-shadow: rgba(0, 0, 0, 0.3);
+  --text-primary: #e2e8f0;
+  --text-secondary: #a0aec0;
+  --text-muted: #718096;
+  --border: #2d3748;
+  --input-bg: #2d3748;
+  --input-border: #4a5568;
+  --input-focus: #667eea;
+  --badge-bg: rgba(102, 126, 234, 0.2);
+  --badge-text: #a3b3f7;
+  --modal-overlay: rgba(0, 0, 0, 0.7);
+  --scrollbar-track: #2d3748;
+  --scrollbar-thumb: #4a5568;
+  --empty-icon: #4a5568;
+}
+
+/* ===== リセット & ベース ===== */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans',
+    'Noto Sans JP', sans-serif;
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--bg-gradient-1), var(--bg-gradient-2));
+  background-attachment: fixed;
+  color: var(--text-primary);
+  line-height: 1.6;
+  transition: background 0.3s ease;
+}
+
+/* ===== スクロールバー ===== */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
+
+/* ===== コンテナ ===== */
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+/* ===== ヘッダー ===== */
+.header {
+  text-align: center;
+  margin-bottom: 32px;
+  position: relative;
+}
+
+.header h1 {
+  font-size: 2.2rem;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  margin-bottom: 4px;
+  letter-spacing: 0.02em;
+}
+
+.header .tagline {
+  color: rgba(255,255,255,0.85);
+  font-size: 1rem;
+}
+
+/* ダークモード切替ボタン */
+.theme-toggle {
+  position: absolute;
+  top: 4px;
+  right: 0;
+  background: rgba(255,255,255,0.2);
+  border: none;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle:hover {
+  background: rgba(255,255,255,0.35);
+}
+
+/* ===== カード共通 ===== */
+.card {
+  background: var(--card-bg);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px var(--card-shadow);
+  padding: 24px;
+  margin-bottom: 24px;
+  backdrop-filter: blur(10px);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ===== 追加フォーム ===== */
+.form-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  border: 2px solid var(--input-border);
+  border-radius: 10px;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  transition: border 0.2s;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--input-focus);
+}
+
+.form-group textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.btn-primary {
+  background: var(--btn-primary);
+  color: #fff;
+  width: 100%;
+}
+
+.btn-primary:hover {
+  background: var(--btn-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+}
+
+/* ===== フィルター・検索 ===== */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 180px;
+  padding: 10px 14px;
+  border: 2px solid var(--input-border);
+  border-radius: 10px;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: border 0.2s;
+}
+
+.search-box:focus {
+  outline: none;
+  border-color: var(--input-focus);
+}
+
+.category-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filter-btn {
+  padding: 6px 14px;
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.filter-btn:hover {
+  border-color: var(--input-focus);
+  color: var(--input-focus);
+}
+
+.filter-btn.active {
+  background: var(--input-focus);
+  border-color: var(--input-focus);
+  color: #fff;
+}
+
+.prompt-count {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ===== プロンプト一覧 ===== */
+.prompt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* プロンプトカード */
+.prompt-card {
+  background: var(--card-bg);
+  border-radius: 14px;
+  box-shadow: 0 2px 12px var(--card-shadow);
+  padding: 20px;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.3s;
+  backdrop-filter: blur(10px);
+  position: relative;
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.prompt-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px var(--card-shadow);
+}
+
+.prompt-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.prompt-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.prompt-card-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* カテゴリ色 */
+.badge-仕事      { background: rgba(229,62,62,0.12); color: var(--category-work); }
+.badge-学習      { background: rgba(72,187,120,0.12); color: var(--category-study); }
+.badge-クリエイティブ { background: rgba(237,137,54,0.12); color: var(--category-creative); }
+.badge-日常      { background: rgba(56,178,172,0.12); color: var(--category-daily); }
+.badge-その他    { background: rgba(160,174,192,0.15); color: var(--category-other); }
+
+.prompt-card-body {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.7;
+  max-height: 160px;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.prompt-card-body.expanded {
+  max-height: none;
+}
+
+.prompt-card-body:not(.expanded)::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(transparent, var(--card-bg));
+  pointer-events: none;
+}
+
+.expand-btn {
+  background: none;
+  border: none;
+  color: var(--input-focus);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 12px;
+  font-family: inherit;
+}
+
+.prompt-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.prompt-card-date {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-right: auto;
+}
+
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.btn-copy {
+  background: var(--btn-copy);
+  color: #fff;
+}
+.btn-copy:hover { background: var(--btn-copy-hover); }
+
+.btn-edit {
+  background: var(--btn-edit);
+  color: #fff;
+}
+.btn-edit:hover { background: var(--btn-edit-hover); }
+
+.btn-danger {
+  background: var(--btn-danger);
+  color: #fff;
+}
+.btn-danger:hover { background: var(--btn-danger-hover); }
+
+/* ===== 空の状態 ===== */
+.empty-state {
+  text-align: center;
+  padding: 48px 16px;
+}
+
+.empty-state .icon {
+  font-size: 3.5rem;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+
+.empty-state p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+/* ===== モーダル（編集用） ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--modal-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  animation: fadeOverlay 0.2s ease;
+}
+
+@keyframes fadeOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 28px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+  animation: modalIn 0.25s ease;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  font-size: 1.15rem;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.modal-actions .btn {
+  flex: 1;
+}
+
+.btn-secondary {
+  background: var(--border);
+  color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+  background: var(--input-border);
+}
+
+/* ===== トースト通知 ===== */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: #2d3748;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  z-index: 2000;
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+[data-theme="dark"] .toast {
+  background: #e2e8f0;
+  color: #1a202c;
+}
+
+/* ===== フッター ===== */
+.footer {
+  text-align: center;
+  color: rgba(255,255,255,0.5);
+  font-size: 0.8rem;
+  padding: 16px 0 8px;
+}
+
+/* ===== レスポンシブ ===== */
+@media (max-width: 600px) {
+  .container { padding: 16px 10px 32px; }
+  .header h1 { font-size: 1.6rem; }
+  .theme-toggle { width: 38px; height: 38px; font-size: 1.1rem; }
+  .form-row { flex-direction: column; gap: 0; }
+  .card { padding: 18px; }
+  .prompt-card { padding: 16px; }
+  .prompt-card-footer { gap: 6px; }
+  .btn-sm { padding: 6px 10px; font-size: 0.78rem; }
+  .toolbar { flex-direction: column; align-items: stretch; }
+  .prompt-count { margin-left: 0; text-align: right; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== ヘッダー ===== -->
+<div class="container">
+  <header class="header">
+    <h1>My Prompt Library</h1>
+    <p class="tagline">お気に入りのプロンプトを保存・整理</p>
+    <button class="theme-toggle" id="themeToggle" title="ダークモード切替">🌙</button>
+  </header>
+
+  <!-- ===== 追加フォーム ===== -->
+  <div class="card" id="formCard">
+    <div class="form-title">✏️ プロンプトを追加</div>
+    <form id="promptForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="promptTitle">タイトル</label>
+          <input type="text" id="promptTitle" placeholder="例：議事録まとめ" required>
+        </div>
+        <div class="form-group" style="max-width: 180px;">
+          <label for="promptCategory">カテゴリ</label>
+          <select id="promptCategory">
+            <option value="仕事">仕事</option>
+            <option value="学習">学習</option>
+            <option value="クリエイティブ">クリエイティブ</option>
+            <option value="日常">日常</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="promptBody">プロンプト本文</label>
+        <textarea id="promptBody" placeholder="プロンプトの内容を入力してください…" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">💾 保存する</button>
+    </form>
+  </div>
+
+  <!-- ===== 検索 & フィルター ===== -->
+  <div class="card">
+    <div class="toolbar">
+      <input type="text" class="search-box" id="searchBox" placeholder="🔍 プロンプトを検索…">
+      <div class="category-filters" id="categoryFilters">
+        <button class="filter-btn active" data-category="すべて">すべて</button>
+        <button class="filter-btn" data-category="仕事">仕事</button>
+        <button class="filter-btn" data-category="学習">学習</button>
+        <button class="filter-btn" data-category="クリエイティブ">クリエイティブ</button>
+        <button class="filter-btn" data-category="日常">日常</button>
+        <button class="filter-btn" data-category="その他">その他</button>
+      </div>
+      <span class="prompt-count" id="promptCount"></span>
+    </div>
+
+    <!-- プロンプト一覧 -->
+    <div class="prompt-list" id="promptList"></div>
+  </div>
+
+  <div class="footer">My Prompt Library &copy; 2026</div>
+</div>
+
+<!-- ===== 編集モーダル ===== -->
+<div class="modal-overlay" id="editModal" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>プロンプトを編集</h2>
+      <button class="modal-close" id="modalClose">&times;</button>
+    </div>
+    <form id="editForm">
+      <input type="hidden" id="editId">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="editTitle">タイトル</label>
+          <input type="text" id="editTitle" required>
+        </div>
+        <div class="form-group" style="max-width: 180px;">
+          <label for="editCategory">カテゴリ</label>
+          <select id="editCategory">
+            <option value="仕事">仕事</option>
+            <option value="学習">学習</option>
+            <option value="クリエイティブ">クリエイティブ</option>
+            <option value="日常">日常</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="editBody">プロンプト本文</label>
+        <textarea id="editBody" required></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" id="editCancel">キャンセル</button>
+        <button type="submit" class="btn btn-primary">✅ 更新する</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== トースト ===== -->
+<div class="toast" id="toast"></div>
+
+<script>
+/*
+  ============================================================
+  My Prompt Library — JavaScript（アプリケーションロジック）
+  ============================================================
+  - ローカルストレージにプロンプトデータを保存
+  - 追加・編集・削除・コピー・検索・フィルター機能
+  - ダークモード切替
+  ============================================================
+*/
+
+// ===== ストレージ管理 =====
+const STORAGE_KEY = 'my_prompt_library';
+const THEME_KEY = 'my_prompt_library_theme';
+
+/** ローカルストレージからプロンプト一覧を取得 */
+function loadPrompts() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch {
+    return [];
+  }
+}
+
+/** ローカルストレージにプロンプト一覧を保存 */
+function savePrompts(prompts) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(prompts));
+}
+
+// ===== 状態 =====
+let prompts = loadPrompts();
+let activeCategory = 'すべて';
+let searchQuery = '';
+
+// ===== DOM要素 =====
+const promptForm = document.getElementById('promptForm');
+const promptTitle = document.getElementById('promptTitle');
+const promptCategory = document.getElementById('promptCategory');
+const promptBody = document.getElementById('promptBody');
+const promptList = document.getElementById('promptList');
+const promptCount = document.getElementById('promptCount');
+const searchBox = document.getElementById('searchBox');
+const categoryFilters = document.getElementById('categoryFilters');
+const editModal = document.getElementById('editModal');
+const editForm = document.getElementById('editForm');
+const editId = document.getElementById('editId');
+const editTitle = document.getElementById('editTitle');
+const editCategory = document.getElementById('editCategory');
+const editBody = document.getElementById('editBody');
+const modalClose = document.getElementById('modalClose');
+const editCancel = document.getElementById('editCancel');
+const themeToggle = document.getElementById('themeToggle');
+const toast = document.getElementById('toast');
+
+// ===== ユーティリティ =====
+
+/** ユニークIDを生成（タイムスタンプ＋ランダム） */
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+/** 日付を「YYYY/MM/DD HH:MM」形式にフォーマット */
+function formatDate(isoString) {
+  const d = new Date(isoString);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** HTMLをエスケープ（XSS対策） */
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/** トースト通知を表示 */
+function showToast(message) {
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+// ===== フィルタリング =====
+
+/** 現在の検索語・カテゴリに合致するプロンプトを返す */
+function getFilteredPrompts() {
+  return prompts.filter(p => {
+    const matchCategory = activeCategory === 'すべて' || p.category === activeCategory;
+    const q = searchQuery.toLowerCase();
+    const matchSearch = !q
+      || p.title.toLowerCase().includes(q)
+      || p.body.toLowerCase().includes(q);
+    return matchCategory && matchSearch;
+  });
+}
+
+// ===== 描画 =====
+
+/** プロンプト一覧を再描画 */
+function render() {
+  const filtered = getFilteredPrompts();
+
+  // 件数表示
+  promptCount.textContent = `${filtered.length} 件`;
+
+  // 一覧が空のとき
+  if (filtered.length === 0) {
+    promptList.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📝</div>
+        <p>${prompts.length === 0
+          ? 'まだプロンプトがありません。<br>上のフォームから追加してみましょう！'
+          : '条件に一致するプロンプトがありません。'
+        }</p>
+      </div>`;
+    return;
+  }
+
+  // カードを生成
+  promptList.innerHTML = filtered.map(p => `
+    <div class="prompt-card" data-id="${p.id}">
+      <div class="prompt-card-header">
+        <span class="prompt-card-title">${escapeHtml(p.title)}</span>
+        <span class="prompt-card-badge badge-${escapeHtml(p.category)}">${escapeHtml(p.category)}</span>
+      </div>
+      <div class="prompt-card-body" id="body-${p.id}">${escapeHtml(p.body)}</div>
+      <button class="expand-btn" data-target="body-${p.id}" style="display:none;">▼ もっと見る</button>
+      <div class="prompt-card-footer">
+        <span class="prompt-card-date">${formatDate(p.updatedAt || p.createdAt)}</span>
+        <button class="btn btn-sm btn-copy" data-action="copy" data-id="${p.id}">📋 コピー</button>
+        <button class="btn btn-sm btn-edit" data-action="edit" data-id="${p.id}">✏️ 編集</button>
+        <button class="btn btn-sm btn-danger" data-action="delete" data-id="${p.id}">🗑 削除</button>
+      </div>
+    </div>
+  `).join('');
+
+  // 長い本文に「もっと見る」ボタンを表示
+  filtered.forEach(p => {
+    const bodyEl = document.getElementById(`body-${p.id}`);
+    const expandBtn = bodyEl?.nextElementSibling;
+    if (bodyEl && expandBtn && bodyEl.scrollHeight > 170) {
+      expandBtn.style.display = 'inline-block';
+    }
+  });
+}
+
+// ===== イベント =====
+
+// --- プロンプト追加 ---
+promptForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const newPrompt = {
+    id: generateId(),
+    title: promptTitle.value.trim(),
+    category: promptCategory.value,
+    body: promptBody.value.trim(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  prompts.unshift(newPrompt);
+  savePrompts(prompts);
+  promptForm.reset();
+  render();
+  showToast('プロンプトを保存しました');
+});
+
+// --- 検索 ---
+searchBox.addEventListener('input', e => {
+  searchQuery = e.target.value;
+  render();
+});
+
+// --- カテゴリフィルター ---
+categoryFilters.addEventListener('click', e => {
+  const btn = e.target.closest('.filter-btn');
+  if (!btn) return;
+  categoryFilters.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeCategory = btn.dataset.category;
+  render();
+});
+
+// --- カード内アクション（コピー / 編集 / 削除 / もっと見る） ---
+promptList.addEventListener('click', e => {
+  // もっと見るボタン
+  const expandBtn = e.target.closest('.expand-btn');
+  if (expandBtn) {
+    const target = document.getElementById(expandBtn.dataset.target);
+    if (target) {
+      const isExpanded = target.classList.toggle('expanded');
+      expandBtn.textContent = isExpanded ? '▲ 折りたたむ' : '▼ もっと見る';
+    }
+    return;
+  }
+
+  const actionBtn = e.target.closest('[data-action]');
+  if (!actionBtn) return;
+
+  const action = actionBtn.dataset.action;
+  const id = actionBtn.dataset.id;
+  const prompt = prompts.find(p => p.id === id);
+  if (!prompt) return;
+
+  if (action === 'copy') {
+    navigator.clipboard.writeText(prompt.body).then(() => {
+      showToast('クリップボードにコピーしました');
+    }).catch(() => {
+      // フォールバック
+      const ta = document.createElement('textarea');
+      ta.value = prompt.body;
+      ta.style.cssText = 'position:fixed;opacity:0;';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('クリップボードにコピーしました');
+    });
+  }
+
+  if (action === 'edit') {
+    editId.value = prompt.id;
+    editTitle.value = prompt.title;
+    editCategory.value = prompt.category;
+    editBody.value = prompt.body;
+    editModal.style.display = 'flex';
+  }
+
+  if (action === 'delete') {
+    if (!confirm(`「${prompt.title}」を削除しますか？`)) return;
+    prompts = prompts.filter(p => p.id !== id);
+    savePrompts(prompts);
+    render();
+    showToast('削除しました');
+  }
+});
+
+// --- 編集モーダル：保存 ---
+editForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const id = editId.value;
+  const idx = prompts.findIndex(p => p.id === id);
+  if (idx === -1) return;
+  prompts[idx].title = editTitle.value.trim();
+  prompts[idx].category = editCategory.value;
+  prompts[idx].body = editBody.value.trim();
+  prompts[idx].updatedAt = new Date().toISOString();
+  savePrompts(prompts);
+  editModal.style.display = 'none';
+  render();
+  showToast('プロンプトを更新しました');
+});
+
+// --- 編集モーダル：閉じる ---
+modalClose.addEventListener('click', () => editModal.style.display = 'none');
+editCancel.addEventListener('click', () => editModal.style.display = 'none');
+editModal.addEventListener('click', e => {
+  if (e.target === editModal) editModal.style.display = 'none';
+});
+
+// --- ダークモード切替 ---
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+  localStorage.setItem(THEME_KEY, theme);
+}
+
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+});
+
+// 初期テーマ読み込み（OS設定 or 保存済み）
+(function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved) {
+    applyTheme(saved);
+  } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    applyTheme('dark');
+  }
+})();
+
+// --- キーボードショートカット（Escでモーダル閉じる） ---
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && editModal.style.display !== 'none') {
+    editModal.style.display = 'none';
+  }
+});
+
+// ===== 初回描画 =====
+render();
+</script>
+</body>
+</html>
