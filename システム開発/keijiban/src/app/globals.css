@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --priority-normal: #22c55e;
+  --priority-important: #eab308;
+  --priority-urgent: #ef4444;
+}
+
+.dark {
+  --priority-normal: #4ade80;
+  --priority-important: #facc15;
+  --priority-urgent: #f87171;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP",
+    "Yu Gothic", "Meiryo", sans-serif;
+}
+
+@layer components {
+  .badge-priority-normal {
+    @apply bg-green-500/20 text-green-700 dark:text-green-300 border border-green-500/40;
+  }
+  .badge-priority-important {
+    @apply bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40;
+  }
+  .badge-priority-urgent {
+    @apply bg-red-500/20 text-red-700 dark:text-red-300 border border-red-500/40;
+  }
+  .card-priority-normal {
+    @apply border-l-4 border-green-500;
+  }
+  .card-priority-important {
+    @apply border-l-4 border-amber-500;
+  }
+  .card-priority-urgent {
+    @apply border-l-4 border-red-500;
+  }
+}
