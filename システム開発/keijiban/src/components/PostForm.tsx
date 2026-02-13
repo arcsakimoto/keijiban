@@ -1,15 +1,17 @@
-/* 投稿フォームコンポーネント - お知らせの新規作成・編集で共通利用 */
+/* 投稿フォームコンポーネント - お知らせの新規作成・編集で共通利用（対象会社・部署フィールド追加） */
 "use client";
 
 import { useState } from "react";
 import type { Category, Priority } from "@/types/database";
-import { CATEGORY_LABELS, PRIORITY_LABELS } from "@/types/database";
+import { CATEGORY_LABELS, PRIORITY_LABELS, COMPANY_LIST, DEPARTMENT_LIST } from "@/types/database";
 
 type PostFormData = {
   title: string;
   body: string;
   category: Category;
   priority: Priority;
+  target_company?: string | null;
+  target_department?: string | null;
 };
 
 export function PostForm({
@@ -25,6 +27,8 @@ export function PostForm({
   const [body, setBody] = useState(initial?.body ?? "");
   const [category, setCategory] = useState<Category>(initial?.category ?? "general");
   const [priority, setPriority] = useState<Priority>(initial?.priority ?? "normal");
+  const [targetCompany, setTargetCompany] = useState(initial?.target_company ?? "");
+  const [targetDepartment, setTargetDepartment] = useState(initial?.target_department ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -37,7 +41,14 @@ export function PostForm({
     setError(null);
     setLoading(true);
     try {
-      await onSubmit({ title: title.trim(), body: body.trim(), category, priority });
+      await onSubmit({
+        title: title.trim(),
+        body: body.trim(),
+        category,
+        priority,
+        target_company: targetCompany || null,
+        target_department: targetDepartment || null,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存に失敗しました。");
     } finally {
@@ -108,6 +119,46 @@ export function PostForm({
             {(Object.keys(PRIORITY_LABELS) as Priority[]).map((p) => (
               <option key={p} value={p}>
                 {PRIORITY_LABELS[p]}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* 対象会社・対象部署（任意） */}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div>
+          <label htmlFor="target_company" className={labelClass}>
+            対象会社（任意）
+          </label>
+          <select
+            id="target_company"
+            value={targetCompany}
+            onChange={(e) => setTargetCompany(e.target.value)}
+            className={inputClass}
+          >
+            <option value="">全社共通</option>
+            {COMPANY_LIST.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="target_department" className={labelClass}>
+            対象部署（任意）
+          </label>
+          <select
+            id="target_department"
+            value={targetDepartment}
+            onChange={(e) => setTargetDepartment(e.target.value)}
+            className={inputClass}
+          >
+            <option value="">全部署</option>
+            {DEPARTMENT_LIST.map((d) => (
+              <option key={d} value={d}>
+                {d}
               </option>
             ))}
           </select>

@@ -1,3 +1,4 @@
+/* 投稿編集フォーム - 既存の投稿を更新する（.select()追加でバグ修正済み） */
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -10,7 +11,14 @@ export function EditPostForm({
   initial,
 }: {
   postId: string;
-  initial: { title: string; body: string; category: Category; priority: Priority };
+  initial: {
+    title: string;
+    body: string;
+    category: Category;
+    priority: Priority;
+    target_company?: string | null;
+    target_department?: string | null;
+  };
 }) {
   const router = useRouter();
 
@@ -19,18 +27,34 @@ export function EditPostForm({
     body: string;
     category: Category;
     priority: Priority;
+    target_company?: string | null;
+    target_department?: string | null;
   }) => {
     const supabase = createClient();
-    const { error } = await supabase
+
+    console.log("[EditPostForm] 更新開始:", { postId, data });
+
+    const { data: updatedRows, error } = await supabase
       .from("posts")
       .update({
         title: data.title,
         body: data.body,
         category: data.category,
         priority: data.priority,
+        target_company: data.target_company || null,
+        target_department: data.target_department || null,
       })
-      .eq("id", postId);
+      .eq("id", postId)
+      .select();
+
+    console.log("[EditPostForm] 更新結果:", { updatedRows, error });
+
     if (error) throw new Error(error.message);
+
+    if (!updatedRows || updatedRows.length === 0) {
+      throw new Error("更新に失敗しました。投稿が見つからないか、権限がありません。");
+    }
+
     router.push(`/posts/${postId}`);
     router.refresh();
   };

@@ -60,7 +60,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-gray-200/80 bg-white/80 backdrop-blur-sm dark:border-slate-700/80 dark:bg-slate-900/80">
+    <header className="sticky top-0 z-50 border-b border-gray-200/60 bg-white/70 backdrop-blur-md shadow-sm dark:border-slate-700/60 dark:bg-slate-900/70">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
         {/* 左側：アイコン + タイトル */}
         <Link href="/" className="flex items-center gap-3 group">

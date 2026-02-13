@@ -1,10 +1,11 @@
-/* 新規登録ページ - ユーザーアカウントの作成 */
+/* 新規登録ページ - ユーザーアカウントの作成（所属会社・部署の選択対応） */
 "use client";
 
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { COMPANY_LIST, DEPARTMENT_LIST } from "@/types/database";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -12,11 +13,16 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [company, setCompany] = useState("");
+  const [department, setDepartment] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!company) {
+      setError("所属会社を選択してください。");
+      return;
+    }
     setError(null);
     setLoading(true);
     const supabase = createClient();
@@ -24,7 +30,11 @@ export default function SignupPage() {
       email,
       password,
       options: {
-        data: { display_name: displayName || null, company: company || null },
+        data: {
+          display_name: displayName || null,
+          company: company || null,
+          department: department || null,
+        },
       },
     });
     if (signUpError) {
@@ -40,6 +50,7 @@ export default function SignupPage() {
         email: user.email,
         display_name: displayName || null,
         company: company || null,
+        department: department || null,
       });
     }
     setLoading(false);
@@ -49,6 +60,9 @@ export default function SignupPage() {
 
   const inputClass =
     "w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 shadow-sm transition-colors focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-500 dark:focus:ring-blue-900/30";
+
+  const labelClass =
+    "mb-1.5 block text-sm font-medium text-gray-700 dark:text-slate-300";
 
   return (
     <div className="mx-auto max-w-md">
@@ -78,7 +92,7 @@ export default function SignupPage() {
             </div>
           )}
           <div>
-            <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-slate-300">
+            <label htmlFor="email" className={labelClass}>
               メールアドレス
             </label>
             <input
@@ -92,7 +106,7 @@ export default function SignupPage() {
             />
           </div>
           <div>
-            <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-slate-300">
+            <label htmlFor="password" className={labelClass}>
               パスワード
             </label>
             <input
@@ -107,7 +121,7 @@ export default function SignupPage() {
             />
           </div>
           <div>
-            <label htmlFor="displayName" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-slate-300">
+            <label htmlFor="displayName" className={labelClass}>
               表示名（任意）
             </label>
             <input
@@ -119,19 +133,48 @@ export default function SignupPage() {
               placeholder="山田 太郎"
             />
           </div>
+
+          {/* 所属会社（必須） */}
           <div>
-            <label htmlFor="company" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-slate-300">
-              会社・部署（任意）
+            <label htmlFor="company" className={labelClass}>
+              所属会社 <span className="text-red-500">*</span>
             </label>
-            <input
+            <select
               id="company"
-              type="text"
+              required
               value={company}
               onChange={(e) => setCompany(e.target.value)}
               className={inputClass}
-              placeholder="株式会社〇〇 総務部"
-            />
+            >
+              <option value="">会社を選択してください</option>
+              {COMPANY_LIST.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
           </div>
+
+          {/* 所属部署（任意） */}
+          <div>
+            <label htmlFor="department" className={labelClass}>
+              所属部署（任意）
+            </label>
+            <select
+              id="department"
+              value={department}
+              onChange={(e) => setDepartment(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">部署を選択してください</option>
+              {DEPARTMENT_LIST.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <button
             type="submit"
             disabled={loading}

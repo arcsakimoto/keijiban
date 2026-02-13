@@ -1,11 +1,11 @@
-/* お知らせ一覧コンポーネント - 検索・フィルター機能付きの投稿カードリスト */
+/* お知らせ一覧コンポーネント - 検索・フィルター機能付きの投稿カードリスト（会社フィルター・トグルパネル対応） */
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Post } from "@/types/database";
-import { CATEGORY_LABELS, PRIORITY_LABELS } from "@/types/database";
+import { CATEGORY_LABELS, PRIORITY_LABELS, COMPANY_LIST } from "@/types/database";
 
 type PostWithProfile = Post & {
   profiles?: { display_name: string | null; email: string; company: string | null } | null;
@@ -23,6 +23,8 @@ export function PostsList({
   const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const [category, setCategory] = useState<string>(searchParams.get("category") ?? "all");
   const [priority, setPriority] = useState<string>(searchParams.get("priority") ?? "all");
+  const [company, setCompany] = useState<string>(searchParams.get("company") ?? "all");
+  const [showFilters, setShowFilters] = useState(false);
 
   // 緊急のお知らせを抽出
   const urgentPosts = useMemo(
@@ -47,28 +49,34 @@ export function PostsList({
     if (priority !== "all") {
       list = list.filter((p) => p.priority === priority);
     }
+    if (company !== "all") {
+      list = list.filter((p) => p.target_company === company);
+    }
     return list;
-  }, [initialPosts, search, category, priority]);
+  }, [initialPosts, search, category, priority, company]);
 
   const updateQuery = useCallback(
-    (updates: { q?: string; category?: string; priority?: string }) => {
+    (updates: { q?: string; category?: string; priority?: string; company?: string }) => {
       const params = new URLSearchParams(searchParams.toString());
       if (updates.q !== undefined) params.set("q", updates.q);
       if (updates.category !== undefined) params.set("category", updates.category);
       if (updates.priority !== undefined) params.set("priority", updates.priority);
+      if (updates.company !== undefined) params.set("company", updates.company);
       router.push(`/?${params.toString()}`);
     },
     [router, searchParams]
   );
 
   // フィルターがアクティブかどうか
-  const hasActiveFilter = search.trim() !== "" || category !== "all" || priority !== "all";
+  const hasActiveFilter = search.trim() !== "" || category !== "all" || priority !== "all" || company !== "all";
+  const activeFilterCount = [category !== "all", priority !== "all", company !== "all"].filter(Boolean).length;
 
   // フィルターをリセット
   const resetFilters = () => {
     setSearch("");
     setCategory("all");
     setPriority("all");
+    setCompany("all");
     router.push("/");
   };
 
@@ -101,7 +109,7 @@ export function PostsList({
   const cardBorderClass = (p: PostWithProfile["priority"]) => {
     if (p === "urgent") return "border-l-4 border-l-red-500";
     if (p === "important") return "border-l-4 border-l-amber-400";
-    return "";
+    return "border-l-4 border-l-emerald-400";
   };
 
   // 重要度バッジのスタイル（pill型: rounded-full）
@@ -116,6 +124,9 @@ export function PostsList({
   // カテゴリバッジのスタイル
   const categoryBadgeClass =
     "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300";
+
+  const selectClass =
+    "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm transition-colors focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:focus:border-blue-500 dark:focus:ring-blue-900/30";
 
   return (
     <div className="space-y-5">
@@ -147,7 +158,7 @@ export function PostsList({
         </div>
       )}
 
-      {/* 検索バー + 新規投稿ボタン */}
+      {/* 検索バー + フィルタートグル + 新規投稿ボタン */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
@@ -167,6 +178,28 @@ export function PostsList({
             className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 placeholder-gray-400 shadow-sm transition-colors focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-500 dark:focus:ring-blue-900/30"
           />
         </div>
+
+        {/* フィルタートグルボタン */}
+        <button
+          type="button"
+          onClick={() => setShowFilters(!showFilters)}
+          className={`inline-flex shrink-0 items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium shadow-sm transition-colors ${
+            showFilters || activeFilterCount > 0
+              ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-300"
+              : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+          }`}
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+          </svg>
+          フィルター
+          {activeFilterCount > 0 && (
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+
         {isLoggedIn && (
           <Link
             href="/posts/new"
@@ -180,56 +213,110 @@ export function PostsList({
         )}
       </div>
 
-      {/* フィルター行 */}
-      <div className="flex flex-wrap items-center gap-3">
-        <select
-          value={category}
-          onChange={(e) => {
-            setCategory(e.target.value);
-            updateQuery({ category: e.target.value === "all" ? undefined : e.target.value });
-          }}
-          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm transition-colors focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:border-blue-500 dark:focus:ring-blue-900/30"
-        >
-          <option value="all">すべてのカテゴリ</option>
-          <option value="general">{CATEGORY_LABELS.general}</option>
-          <option value="safety">{CATEGORY_LABELS.safety}</option>
-          <option value="site">{CATEGORY_LABELS.site}</option>
-          <option value="admin_hr">{CATEGORY_LABELS.admin_hr}</option>
-          <option value="other">{CATEGORY_LABELS.other}</option>
-        </select>
+      {/* フィルターパネル（トグル表示） */}
+      {showFilters && (
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {/* カテゴリフィルター */}
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-slate-400">
+                カテゴリ
+              </label>
+              <select
+                value={category}
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                  updateQuery({ category: e.target.value === "all" ? undefined : e.target.value });
+                }}
+                className={selectClass}
+              >
+                <option value="all">すべてのカテゴリ</option>
+                <option value="general">{CATEGORY_LABELS.general}</option>
+                <option value="safety">{CATEGORY_LABELS.safety}</option>
+                <option value="site">{CATEGORY_LABELS.site}</option>
+                <option value="admin_hr">{CATEGORY_LABELS.admin_hr}</option>
+                <option value="other">{CATEGORY_LABELS.other}</option>
+              </select>
+            </div>
 
-        <select
-          value={priority}
-          onChange={(e) => {
-            setPriority(e.target.value);
-            updateQuery({ priority: e.target.value === "all" ? undefined : e.target.value });
-          }}
-          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm transition-colors focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:border-blue-500 dark:focus:ring-blue-900/30"
-        >
-          <option value="all">すべての重要度</option>
-          <option value="normal">{PRIORITY_LABELS.normal}</option>
-          <option value="important">{PRIORITY_LABELS.important}</option>
-          <option value="urgent">{PRIORITY_LABELS.urgent}</option>
-        </select>
+            {/* 重要度フィルター */}
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-slate-400">
+                重要度
+              </label>
+              <select
+                value={priority}
+                onChange={(e) => {
+                  setPriority(e.target.value);
+                  updateQuery({ priority: e.target.value === "all" ? undefined : e.target.value });
+                }}
+                className={selectClass}
+              >
+                <option value="all">すべての重要度</option>
+                <option value="normal">{PRIORITY_LABELS.normal}</option>
+                <option value="important">{PRIORITY_LABELS.important}</option>
+                <option value="urgent">{PRIORITY_LABELS.urgent}</option>
+              </select>
+            </div>
 
-        {/* フィルター解除ボタン */}
-        {hasActiveFilter && (
+            {/* 会社フィルター */}
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-slate-400">
+                対象会社
+              </label>
+              <select
+                value={company}
+                onChange={(e) => {
+                  setCompany(e.target.value);
+                  updateQuery({ company: e.target.value === "all" ? undefined : e.target.value });
+                }}
+                className={selectClass}
+              >
+                <option value="all">すべての会社</option>
+                {COMPANY_LIST.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* フィルターリセットボタン */}
+          {hasActiveFilter && (
+            <div className="mt-3 flex justify-end">
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200 transition-colors"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+                フィルターをリセット
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 件数表示 */}
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-gray-500 dark:text-slate-400">
+          {filtered.length} 件のお知らせ
+        </span>
+        {hasActiveFilter && !showFilters && (
           <button
             type="button"
             onClick={resetFilters}
-            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
           >
-            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
             </svg>
             フィルター解除
           </button>
         )}
-
-        {/* 件数表示 */}
-        <span className="ml-auto text-sm text-gray-500 dark:text-slate-400">
-          {filtered.length} 件のお知らせ
-        </span>
       </div>
 
       {/* 投稿カード一覧 */}
@@ -254,7 +341,7 @@ export function PostsList({
                 className={`group block rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 dark:border-slate-700 dark:bg-slate-800 ${cardBorderClass(post.priority)}`}
               >
                 {/* 上段：バッジ群 + 日付（右寄せ） */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span
                     className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${badgeClass(post.priority)}`}
                   >
@@ -270,6 +357,12 @@ export function PostsList({
                   >
                     {CATEGORY_LABELS[post.category]}
                   </span>
+                  {/* 対象会社バッジ */}
+                  {post.target_company && (
+                    <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                      {post.target_company}
+                    </span>
+                  )}
                   <span className="ml-auto text-xs text-gray-400 dark:text-slate-500">
                     {timeAgo(post.created_at)}
                   </span>

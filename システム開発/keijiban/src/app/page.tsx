@@ -18,6 +18,9 @@ export default async function HomePage() {
       body,
       category,
       priority,
+      target_company,
+      target_department,
+      is_pinned,
       created_at,
       profiles:author_id (display_name, email, company)
     `

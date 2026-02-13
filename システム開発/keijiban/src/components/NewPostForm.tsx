@@ -1,3 +1,4 @@
+/* 新規投稿フォーム - お知らせを新規作成（対象会社・部署フィールド対応） */
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -12,6 +13,8 @@ export function NewPostForm() {
     body: string;
     category: "general" | "safety" | "site" | "admin_hr" | "other";
     priority: "normal" | "important" | "urgent";
+    target_company?: string | null;
+    target_department?: string | null;
   }) => {
     const supabase = createClient();
     const {
@@ -26,6 +29,8 @@ export function NewPostForm() {
         body: data.body,
         category: data.category,
         priority: data.priority,
+        target_company: data.target_company || null,
+        target_department: data.target_department || null,
       })
       .select("id")
       .single();
