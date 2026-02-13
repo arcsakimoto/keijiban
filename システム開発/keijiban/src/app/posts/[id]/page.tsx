@@ -42,7 +42,8 @@ export default async function PostDetailPage({
 
   if (error || !post) notFound();
 
-  const profile = post.profiles as { display_name: string | null; email: string; company: string | null } | null;
+  const rawProfiles = post.profiles as any;
+  const profile = Array.isArray(rawProfiles) ? rawProfiles[0] ?? null : rawProfiles;
   const isAuthor = user?.id === post.author_id;
 
   return (

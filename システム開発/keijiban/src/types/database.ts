@@ -18,7 +18,6 @@ export interface Post {
   priority: Priority;
   created_at?: string;
   updated_at?: string;
-  profiles?: Profile | null;
 }
 
 export const CATEGORY_LABELS: Record<Category, string> = {
