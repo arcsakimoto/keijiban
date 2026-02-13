@@ -72,25 +72,50 @@ export function PostsList({
     router.push("/");
   };
 
+  // 相対時刻を計算（「〇分前」「〇時間前」「〇日前」形式）
+  const timeAgo = (dateStr: string | undefined) => {
+    if (!dateStr) return "—";
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHour = Math.floor(diffMs / 3600000);
+    const diffDay = Math.floor(diffMs / 86400000);
+    if (diffMin < 1) return "たった今";
+    if (diffMin < 60) return `${diffMin}分前`;
+    if (diffHour < 24) return `${diffHour}時間前`;
+    if (diffDay < 30) return `${diffDay}日前`;
+    return date.toLocaleDateString("ja-JP", { year: "numeric", month: "short", day: "numeric" });
+  };
+
+  // 投稿者の頭文字を取得（アバター用）
+  const getAuthorInitial = (post: PostWithProfile) => {
+    const name = post.profiles?.display_name;
+    if (name) return name.charAt(0);
+    const email = post.profiles?.email;
+    if (email) return email.charAt(0).toUpperCase();
+    return "?";
+  };
+
   // 重要度に応じたカードの左ボーダー色
   const cardBorderClass = (p: PostWithProfile["priority"]) => {
     if (p === "urgent") return "border-l-4 border-l-red-500";
-    if (p === "important") return "border-l-4 border-l-amber-500";
+    if (p === "important") return "border-l-4 border-l-amber-400";
     return "";
   };
 
-  // 重要度バッジのスタイル
+  // 重要度バッジのスタイル（pill型: rounded-full）
   const badgeClass = (p: PostWithProfile["priority"]) => {
     if (p === "urgent")
-      return "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300";
+      return "bg-red-500 text-white dark:bg-red-600";
     if (p === "important")
-      return "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300";
-    return "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300";
+      return "bg-amber-400 text-amber-900 dark:bg-amber-500 dark:text-amber-950";
+    return "bg-emerald-500 text-white dark:bg-emerald-600";
   };
 
   // カテゴリバッジのスタイル
   const categoryBadgeClass =
-    "bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300";
+    "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300";
 
   return (
     <div className="space-y-5">
@@ -228,10 +253,10 @@ export function PostsList({
                 href={`/posts/${post.id}`}
                 className={`group block rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 dark:border-slate-700 dark:bg-slate-800 ${cardBorderClass(post.priority)}`}
               >
-                {/* 上段：バッジ群 */}
-                <div className="flex flex-wrap items-center gap-2">
+                {/* 上段：バッジ群 + 日付（右寄せ） */}
+                <div className="flex items-center gap-2">
                   <span
-                    className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold ${badgeClass(post.priority)}`}
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${badgeClass(post.priority)}`}
                   >
                     {post.priority === "urgent" && (
                       <svg className="mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
@@ -241,9 +266,12 @@ export function PostsList({
                     {PRIORITY_LABELS[post.priority]}
                   </span>
                   <span
-                    className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-medium ${categoryBadgeClass}`}
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${categoryBadgeClass}`}
                   >
                     {CATEGORY_LABELS[post.category]}
+                  </span>
+                  <span className="ml-auto text-xs text-gray-400 dark:text-slate-500">
+                    {timeAgo(post.created_at)}
                   </span>
                 </div>
 
@@ -252,35 +280,19 @@ export function PostsList({
                   {post.title}
                 </h2>
 
-                {/* 本文プレビュー */}
+                {/* 本文プレビュー（2行で切り捨て） */}
                 <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-gray-600 dark:text-slate-400">
                   {post.body}
                 </p>
 
-                {/* 下段：投稿者情報 */}
-                <div className="mt-3 flex items-center gap-2 text-xs text-gray-400 dark:text-slate-500">
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-                  </svg>
-                  <span>{post.profiles?.display_name ?? post.profiles?.email ?? "不明"}</span>
-                  {post.profiles?.company && (
-                    <>
-                      <span className="text-gray-300 dark:text-slate-600">|</span>
-                      <span>{post.profiles.company}</span>
-                    </>
-                  )}
-                  <span className="text-gray-300 dark:text-slate-600">|</span>
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
-                  </svg>
-                  <span>
-                    {post.created_at
-                      ? new Date(post.created_at).toLocaleDateString("ja-JP", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })
-                      : "—"}
+                {/* 下段：投稿者アバター + 名前 · 会社名 */}
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                    {getAuthorInitial(post)}
+                  </div>
+                  <span className="text-xs text-gray-500 dark:text-slate-400">
+                    {post.profiles?.display_name ?? post.profiles?.email ?? "不明"}
+                    {post.profiles?.company && ` · ${post.profiles.company}`}
                   </span>
                 </div>
               </Link>
