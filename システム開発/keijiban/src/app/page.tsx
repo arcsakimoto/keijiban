@@ -1,3 +1,4 @@
+/* ホームページ - お知らせ一覧を表示するメインページ */
 import { createClient } from "@/lib/supabase/server";
 import { PostsList } from "@/components/PostsList";
 
@@ -17,6 +18,7 @@ export default async function HomePage() {
       body,
       category,
       priority,
+      created_at,
       profiles:author_id (display_name, email, company)
     `
     )
@@ -29,14 +31,9 @@ export default async function HomePage() {
   }));
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-        お知らせ一覧
-      </h1>
-      <PostsList
-        initialPosts={normalizedPosts}
-        isLoggedIn={!!user}
-      />
-    </div>
+    <PostsList
+      initialPosts={normalizedPosts}
+      isLoggedIn={!!user}
+    />
   );
 }

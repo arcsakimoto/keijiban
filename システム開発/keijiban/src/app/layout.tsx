@@ -1,10 +1,11 @@
+/* ルートレイアウト - アプリ全体の共通構造（ヘッダー・テーマ・メインコンテンツ） */
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Header } from "@/components/Header";
 
 export const metadata: Metadata = {
-  title: "お知らせ掲示板",
+  title: "社内連絡掲示板",
   description: "社内お知らせの閲覧・投稿",
 };
 
@@ -15,10 +16,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" suppressHydrationWarning>
-      <body className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors">
+      <body className="min-h-screen bg-gray-50 text-gray-900 dark:bg-slate-950 dark:text-slate-100 transition-colors">
         <ThemeProvider>
           <Header />
-          <main className="container mx-auto px-4 py-6 max-w-4xl">
+          <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
             {children}
           </main>
         </ThemeProvider>
