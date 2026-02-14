@@ -5,8 +5,7 @@ export type Priority = "normal" | "important" | "urgent";
 export type Company =
   | "ARCFEEL GROUP"
   | "コスモスエンジニアリング"
-  | "カネケン京葉コミュニティ"
-  | "アークアセットマネジメント";
+  | "カネケン京葉コミュニティ";
 
 /* 部署型 */
 export type Department =
@@ -22,7 +21,6 @@ export const COMPANY_LIST: Company[] = [
   "ARCFEEL GROUP",
   "コスモスエンジニアリング",
   "カネケン京葉コミュニティ",
-  "アークアセットマネジメント",
 ];
 
 /* 部署一覧（セレクトボックス用） */
