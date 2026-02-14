@@ -14,7 +14,7 @@ const notoSansJP = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
-  title: "社内連絡掲示板",
+  title: "ARCFEELGROUP連絡掲示板",
   description: "社内お知らせの閲覧・投稿",
 };
 
@@ -52,7 +52,7 @@ export default async function RootLayout({
             {children}
           </main>
           <footer className="border-t border-gray-200 bg-white/60 py-6 text-center text-sm text-gray-400 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-500">
-            &copy; 2025 ARCFEEL GROUP 社内連絡掲示板
+            &copy; 2025 ARCFEEL GROUP 連絡掲示板
           </footer>
         </ThemeProvider>
       </body>

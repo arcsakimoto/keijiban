@@ -43,7 +43,7 @@ export default function LoginPage() {
             ログイン
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-            社内連絡掲示板にアクセス
+            ARCFEELGROUP連絡掲示板にアクセス
           </p>
         </div>
 

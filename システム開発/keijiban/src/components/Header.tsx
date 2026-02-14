@@ -1,4 +1,4 @@
-/* ヘッダーコンポーネント - 社内連絡掲示板のナビゲーションバー */
+/* ヘッダーコンポーネント - ARCFEELGROUP連絡掲示板のナビゲーションバー */
 /* サーバーから渡された名前を初期値として使用（クライアント側のRLS問題を回避） */
 "use client";
 
@@ -100,7 +100,7 @@ export function Header({
             </svg>
           </div>
           <span className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-            社内連絡掲示板
+            ARCFEELGROUP連絡掲示板
           </span>
         </Link>
 
