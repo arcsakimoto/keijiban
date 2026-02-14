@@ -1,16 +1,19 @@
-/* ヘッダーコンポーネント - 社内連絡掲示板のナビゲーションバー */
+/* ヘッダーコンポーネント - 社内連絡掲示板のナビゲーションバー（authLoading対応） */
 "use client";
 
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useTheme } from "@/components/ThemeProvider";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 
 export function Header() {
   const { theme, toggleTheme, mounted } = useTheme();
   const [user, setUser] = useState<User | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -24,6 +27,7 @@ export function Header() {
           .single();
         setDisplayName(profile?.display_name ?? null);
       }
+      setAuthLoading(false);
     });
     const {
       data: { subscription },
@@ -39,9 +43,23 @@ export function Header() {
       } else {
         setDisplayName(null);
       }
+      setAuthLoading(false);
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // メニュー外クリックで閉じる
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    if (showMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showMenu]);
 
   const handleSignOut = async () => {
     try {
@@ -51,7 +69,6 @@ export function Header() {
         alert("ログアウトに失敗しました: " + error.message);
         return;
       }
-      // フルページリロードでログインページに遷移
       window.location.href = "/login";
     } catch (err) {
       alert("ログアウト中にエラーが発生しました。ページを再読み込みしてください。");
@@ -103,28 +120,55 @@ export function Header() {
             </button>
           )}
 
-          {user ? (
+          {/* 認証状態の読み込み中は何も表示しない */}
+          {authLoading ? null : user ? (
             <>
-              {/* ユーザーアバター（名前の頭文字） */}
-              <div
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
-                title={displayName ?? user.email ?? "ユーザー"}
+              {/* 新規投稿ボタン */}
+              <Link
+                href="/posts/new"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 transition-colors"
               >
-                {getInitial()}
-              </div>
-
-              {/* ログアウトボタン */}
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-colors"
-                aria-label="ログアウト"
-                title="ログアウト"
-              >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" />
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
-              </button>
+                新規投稿
+              </Link>
+
+              {/* ユーザーアバター（クリックでメニュー） */}
+              <div className="relative" ref={menuRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowMenu(!showMenu)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 transition-colors hover:ring-2 hover:ring-blue-300 dark:hover:ring-blue-600"
+                  title={displayName ?? user.email ?? "ユーザー"}
+                >
+                  {getInitial()}
+                </button>
+
+                {/* ドロップダウンメニュー */}
+                {showMenu && (
+                  <div className="absolute right-0 mt-2 w-48 rounded-xl border border-gray-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                    <div className="border-b border-gray-100 px-4 py-2 dark:border-slate-700">
+                      <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
+                        {displayName ?? "ユーザー"}
+                      </p>
+                      <p className="truncate text-xs text-gray-500 dark:text-slate-400">
+                        {user.email}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSignOut}
+                      className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" />
+                      </svg>
+                      ログアウト
+                    </button>
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             <>
