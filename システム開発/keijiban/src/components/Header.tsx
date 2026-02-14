@@ -46,10 +46,20 @@ export function Header() {
   }, []);
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/");
-    router.refresh();
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        alert("ログアウトに失敗しました: " + error.message);
+        return;
+      }
+      router.push("/");
+      router.refresh();
+      // router.refresh で反映されない場合の対策としてフルリロード
+      window.location.href = "/";
+    } catch (err) {
+      alert("ログアウト中にエラーが発生しました。ページを再読み込みしてください。");
+    }
   };
 
   // ユーザー名の頭文字を取得（アバター用）
