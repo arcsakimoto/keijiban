@@ -2,12 +2,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export function PostActions({ postId }: { postId: string }) {
-  const router = useRouter();
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {
@@ -15,9 +13,7 @@ export function PostActions({ postId }: { postId: string }) {
     setDeleting(true);
     const supabase = createClient();
     await supabase.from("posts").delete().eq("id", postId);
-    setDeleting(false);
-    router.push("/");
-    router.refresh();
+    window.location.href = "/";
   };
 
   return (

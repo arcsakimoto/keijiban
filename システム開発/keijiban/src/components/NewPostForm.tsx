@@ -1,12 +1,10 @@
 /* 新規投稿フォーム - お知らせを新規作成（対象会社・部署フィールド対応） */
 "use client";
 
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { PostForm } from "@/components/PostForm";
 
 export function NewPostForm() {
-  const router = useRouter();
 
   const handleSubmit = async (data: {
     title: string;
@@ -21,7 +19,7 @@ export function NewPostForm() {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw new Error("ログインしてください");
-    const { data: post, error } = await supabase
+    const { error } = await supabase
       .from("posts")
       .insert({
         author_id: user.id,
@@ -35,8 +33,7 @@ export function NewPostForm() {
       .select("id")
       .single();
     if (error) throw new Error(error.message);
-    router.push(`/posts/${post.id}`);
-    router.refresh();
+    window.location.href = "/";
   };
 
   return <PostForm onSubmit={handleSubmit} submitLabel="投稿する" />;

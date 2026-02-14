@@ -3,12 +3,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { COMPANY_LIST, DEPARTMENT_LIST } from "@/types/database";
 
 export default function SignupPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -53,9 +51,7 @@ export default function SignupPage() {
         department: department || null,
       });
     }
-    setLoading(false);
-    router.push("/");
-    router.refresh();
+    window.location.href = "/";
   };
 
   const inputClass =
