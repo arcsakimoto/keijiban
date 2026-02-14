@@ -17,23 +17,20 @@ export function Header() {
   useEffect(() => {
     const supabase = createClient();
 
-    // セッションからユーザー取得（初回ロード用）
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    // セッションからユーザー状態だけ先にセット（UIのチラつき防止）
+    // プロフィールの正式取得はonAuthStateChangeで一本化（レース条件防止）
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("display_name")
-          .eq("id", session.user.id)
-          .single();
-        setDisplayName(profile?.display_name ?? null);
-      } else {
-        setUser(null);
-        setDisplayName(null);
+        // user_metadataから名前を仮セット（DB問い合わせ前の表示用）
+        const metaName = session.user.user_metadata?.display_name;
+        if (metaName) {
+          setDisplayName(metaName as string);
+        }
       }
     });
 
-    // 認証状態の変更を監視
+    // 認証状態の変更を監視（プロフィールのDB取得はここに一本化）
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -44,14 +41,18 @@ export function Header() {
       }
       setUser(session.user);
       // TOKEN_REFRESHED（トークン更新）の場合はプロフィールを再取得しない
-      // → これが操作後に「A」になっていた原因
       if (event !== "TOKEN_REFRESHED") {
         const { data: profile } = await supabase
           .from("profiles")
           .select("display_name")
           .eq("id", session.user.id)
           .single();
-        setDisplayName(profile?.display_name ?? null);
+        // profilesテーブルから取得できた場合はそちらを使用
+        // 取得できない場合はuser_metadataにフォールバック（RLS等の問題対策）
+        const name = profile?.display_name
+          || session.user.user_metadata?.display_name
+          || null;
+        setDisplayName(name);
       }
     });
 
