@@ -11,9 +11,23 @@ export function PostActions({ postId }: { postId: string }) {
   const handleDelete = async () => {
     if (!confirm("このお知らせを削除してもよろしいですか？")) return;
     setDeleting(true);
-    const supabase = createClient();
-    await supabase.from("posts").delete().eq("id", postId);
-    window.location.href = "/";
+    try {
+      const supabase = createClient();
+      // 認証トークンを検証・更新してからDB操作を行う
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        alert("ログインしてください。再度ログインしてからお試しください。");
+        setDeleting(false);
+        return;
+      }
+      await supabase.from("posts").delete().eq("id", postId);
+      window.location.href = "/";
+    } catch {
+      alert("削除に失敗しました。");
+      setDeleting(false);
+    }
   };
 
   return (

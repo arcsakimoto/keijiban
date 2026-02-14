@@ -30,7 +30,11 @@ export function EditPostForm({
   }) => {
     const supabase = createClient();
 
-    console.log("[EditPostForm] 更新開始:", { postId, data });
+    // 認証トークンを検証・更新してからDB操作を行う
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("ログインしてください。再度ログインしてからお試しください。");
 
     const { data: updatedRows, error } = await supabase
       .from("posts")
@@ -44,8 +48,6 @@ export function EditPostForm({
       })
       .eq("id", postId)
       .select();
-
-    console.log("[EditPostForm] 更新結果:", { updatedRows, error });
 
     if (error) throw new Error(error.message);
 
