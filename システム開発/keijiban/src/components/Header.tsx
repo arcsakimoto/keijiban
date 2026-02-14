@@ -16,54 +16,42 @@ export function Header() {
 
   useEffect(() => {
     const supabase = createClient();
-    // プロフィール取得済みフラグ（getSession と onAuthStateChange の重複取得を防ぐ）
-    let profileLoaded = false;
 
-    // プロフィール取得用のヘルパー関数（エラー時は既存の displayName を維持）
-    const fetchDisplayName = async (userId: string) => {
-      try {
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("display_name")
-          .eq("id", userId)
-          .single();
-        if (!error && profile) {
-          setDisplayName(profile.display_name ?? null);
-          profileLoaded = true;
-        }
-      } catch {
-        // ネットワークエラー等の場合、既存の displayName を維持
-      }
-    };
-
-    // セッションからユーザー取得（初回ロード用・最も安定した方法）
+    // セッションからユーザー取得（初回ロード用）
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-        if (!profileLoaded) {
-          await fetchDisplayName(session.user.id);
-        }
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("display_name")
+          .eq("id", session.user.id)
+          .single();
+        setDisplayName(profile?.display_name ?? null);
       } else {
         setUser(null);
         setDisplayName(null);
       }
     });
 
-    // 認証状態の変更を監視（ログイン・ログアウト時のみ反応）
+    // 認証状態の変更を監視
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_OUT" || !session?.user) {
         setUser(null);
         setDisplayName(null);
-        profileLoaded = false;
         return;
       }
       setUser(session.user);
-      // SIGNED_IN（ログイン直後）の場合のみプロフィールを再取得
-      // TOKEN_REFRESHED や INITIAL_SESSION では既存の displayName を維持する
-      if (event === "SIGNED_IN") {
-        await fetchDisplayName(session.user.id);
+      // TOKEN_REFRESHED（トークン更新）の場合はプロフィールを再取得しない
+      // → これが操作後に「A」になっていた原因
+      if (event !== "TOKEN_REFRESHED") {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("display_name")
+          .eq("id", session.user.id)
+          .single();
+        setDisplayName(profile?.display_name ?? null);
       }
     });
 
