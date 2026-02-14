@@ -1,4 +1,4 @@
-/* ヘッダーコンポーネント - 社内連絡掲示板のナビゲーションバー（authLoading対応） */
+/* ヘッダーコンポーネント - 社内連絡掲示板のナビゲーションバー */
 "use client";
 
 import Link from "next/link";
@@ -11,12 +11,13 @@ export function Header() {
   const { theme, toggleTheme, mounted } = useTheme();
   const [user, setUser] = useState<User | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const supabase = createClient();
+
+    // ユーザー取得
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       setUser(user);
       if (user) {
@@ -27,8 +28,9 @@ export function Header() {
           .single();
         setDisplayName(profile?.display_name ?? null);
       }
-      setAuthLoading(false);
     });
+
+    // 認証状態の変更を監視
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -43,8 +45,8 @@ export function Header() {
       } else {
         setDisplayName(null);
       }
-      setAuthLoading(false);
     });
+
     return () => subscription.unsubscribe();
   }, []);
 
@@ -62,17 +64,9 @@ export function Header() {
   }, [showMenu]);
 
   const handleSignOut = async () => {
-    try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        alert("ログアウトに失敗しました: " + error.message);
-        return;
-      }
-      window.location.href = "/login";
-    } catch (err) {
-      alert("ログアウト中にエラーが発生しました。ページを再読み込みしてください。");
-    }
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = "/";
   };
 
   // ユーザー名の頭文字を取得（アバター用）
@@ -120,8 +114,7 @@ export function Header() {
             </button>
           )}
 
-          {/* 認証状態の読み込み中は何も表示しない */}
-          {authLoading ? null : user ? (
+          {user ? (
             <>
               {/* 新規投稿ボタン */}
               <Link
