@@ -2,14 +2,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useTheme } from "@/components/ThemeProvider";
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 
 export function Header() {
-  const router = useRouter();
   const { theme, toggleTheme, mounted } = useTheme();
   const [user, setUser] = useState<User | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
@@ -53,10 +51,8 @@ export function Header() {
         alert("ログアウトに失敗しました: " + error.message);
         return;
       }
-      router.push("/");
-      router.refresh();
-      // router.refresh で反映されない場合の対策としてフルリロード
-      window.location.href = "/";
+      // フルページリロードでログインページに遷移
+      window.location.href = "/login";
     } catch (err) {
       alert("ログアウト中にエラーが発生しました。ページを再読み込みしてください。");
     }

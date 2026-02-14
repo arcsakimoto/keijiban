@@ -1,7 +1,6 @@
 /* 投稿編集フォーム - 既存の投稿を更新する（.select()追加でバグ修正済み） */
 "use client";
 
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { PostForm } from "@/components/PostForm";
 import type { Category, Priority } from "@/types/database";
@@ -20,7 +19,6 @@ export function EditPostForm({
     target_department?: string | null;
   };
 }) {
-  const router = useRouter();
 
   const handleSubmit = async (data: {
     title: string;
@@ -55,8 +53,8 @@ export function EditPostForm({
       throw new Error("更新に失敗しました。投稿が見つからないか、権限がありません。");
     }
 
-    router.push(`/posts/${postId}`);
-    router.refresh();
+    // フルページリロードで確実に更新後の内容を反映
+    window.location.href = `/posts/${postId}`;
   };
 
   return (
