@@ -1,4 +1,4 @@
-export type Category = "general" | "safety" | "site" | "admin_hr" | "other";
+export type Category = "corporate_hq" | "safety_dept" | "general" | "other";
 export type Priority = "normal" | "important" | "urgent";
 
 /* グループ4社の会社型 */
@@ -59,10 +59,9 @@ export interface Post {
 }
 
 export const CATEGORY_LABELS: Record<Category, string> = {
+  corporate_hq: "コーポレート本部",
+  safety_dept: "安全監督部",
   general: "一般",
-  safety: "安全",
-  site: "現場",
-  admin_hr: "管理・人事",
   other: "その他",
 };
 

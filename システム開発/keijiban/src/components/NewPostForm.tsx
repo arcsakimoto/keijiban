@@ -3,14 +3,15 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { PostForm } from "@/components/PostForm";
+import type { Category, Priority } from "@/types/database";
 
 export function NewPostForm() {
 
   const handleSubmit = async (data: {
     title: string;
     body: string;
-    category: "general" | "safety" | "site" | "admin_hr" | "other";
-    priority: "normal" | "important" | "urgent";
+    category: Category;
+    priority: Priority;
     target_company?: string | null;
     target_department?: string | null;
   }) => {

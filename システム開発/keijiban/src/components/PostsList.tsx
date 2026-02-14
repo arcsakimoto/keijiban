@@ -231,11 +231,9 @@ export function PostsList({
                 className={selectClass}
               >
                 <option value="all">すべてのカテゴリ</option>
-                <option value="general">{CATEGORY_LABELS.general}</option>
-                <option value="safety">{CATEGORY_LABELS.safety}</option>
-                <option value="site">{CATEGORY_LABELS.site}</option>
-                <option value="admin_hr">{CATEGORY_LABELS.admin_hr}</option>
-                <option value="other">{CATEGORY_LABELS.other}</option>
+                {(Object.keys(CATEGORY_LABELS) as (keyof typeof CATEGORY_LABELS)[]).map((key) => (
+                  <option key={key} value={key}>{CATEGORY_LABELS[key]}</option>
+                ))}
               </select>
             </div>
 
