@@ -1,4 +1,5 @@
 /* ヘッダーコンポーネント - 社内連絡掲示板のナビゲーションバー */
+/* サーバーから渡された名前を初期値として使用（クライアント側のRLS問題を回避） */
 "use client";
 
 import Link from "next/link";
@@ -7,53 +8,48 @@ import { useTheme } from "@/components/ThemeProvider";
 import { useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 
-export function Header() {
+type HeaderProps = {
+  serverDisplayName?: string | null;
+  serverEmail?: string | null;
+  serverIsLoggedIn?: boolean;
+};
+
+export function Header({
+  serverDisplayName = null,
+  serverEmail = null,
+  serverIsLoggedIn = false,
+}: HeaderProps) {
   const { theme, toggleTheme, mounted } = useTheme();
   const [user, setUser] = useState<User | null>(null);
-  const [displayName, setDisplayName] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(serverDisplayName);
+  const [isLoggedIn, setIsLoggedIn] = useState(serverIsLoggedIn);
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const supabase = createClient();
 
-    // セッションからユーザー状態だけ先にセット（UIのチラつき防止）
-    // プロフィールの正式取得はonAuthStateChangeで一本化（レース条件防止）
+    // セッションからユーザー状態をセット
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-        // user_metadataから名前を仮セット（DB問い合わせ前の表示用）
-        const metaName = session.user.user_metadata?.display_name;
-        if (metaName) {
-          setDisplayName(metaName as string);
-        }
+        setIsLoggedIn(true);
       }
     });
 
-    // 認証状態の変更を監視（プロフィールのDB取得はここに一本化）
+    // 認証状態の変更を監視（ログアウト検知用）
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_OUT" || !session?.user) {
         setUser(null);
         setDisplayName(null);
+        setIsLoggedIn(false);
         return;
       }
       setUser(session.user);
-      // TOKEN_REFRESHED（トークン更新）の場合はプロフィールを再取得しない
-      if (event !== "TOKEN_REFRESHED") {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("display_name")
-          .eq("id", session.user.id)
-          .single();
-        // profilesテーブルから取得できた場合はそちらを使用
-        // 取得できない場合はuser_metadataにフォールバック（RLS等の問題対策）
-        const name = profile?.display_name
-          || session.user.user_metadata?.display_name
-          || null;
-        setDisplayName(name);
-      }
+      setIsLoggedIn(true);
+      // 名前の取得はサーバー側で行うため、クライアント側ではDB問い合わせしない
     });
 
     return () => subscription.unsubscribe();
@@ -85,9 +81,13 @@ export function Header() {
   // ユーザー名の頭文字を取得（アバター用）
   const getInitial = () => {
     if (displayName) return displayName.charAt(0);
-    if (user?.email) return user.email.charAt(0).toUpperCase();
+    const email = user?.email || serverEmail;
+    if (email) return email.charAt(0).toUpperCase();
     return "U";
   };
+
+  // 表示用のメールアドレス
+  const currentEmail = user?.email || serverEmail;
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200/60 bg-white/70 backdrop-blur-md shadow-sm dark:border-slate-700/60 dark:bg-slate-900/70">
@@ -127,7 +127,7 @@ export function Header() {
             </button>
           )}
 
-          {user ? (
+          {isLoggedIn ? (
             <>
               {/* 新規投稿ボタン */}
               <Link
@@ -146,7 +146,7 @@ export function Header() {
                   type="button"
                   onClick={() => setShowMenu(!showMenu)}
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 transition-colors hover:ring-2 hover:ring-blue-300 dark:hover:ring-blue-600"
-                  title={displayName ?? user.email ?? "ユーザー"}
+                  title={displayName ?? currentEmail ?? "ユーザー"}
                 >
                   {getInitial()}
                 </button>
@@ -159,7 +159,7 @@ export function Header() {
                         {displayName ?? "ユーザー"}
                       </p>
                       <p className="truncate text-xs text-gray-500 dark:text-slate-400">
-                        {user.email}
+                        {currentEmail}
                       </p>
                     </div>
                     <button
