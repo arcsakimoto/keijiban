@@ -17,25 +17,10 @@ export function Header() {
   useEffect(() => {
     const supabase = createClient();
 
-    // ユーザー取得
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      setUser(user);
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("display_name")
-          .eq("id", user.id)
-          .single();
-        setDisplayName(profile?.display_name ?? null);
-      }
-    });
-
-    // 認証状態の変更を監視
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user ?? null);
+    // セッションからユーザー取得（getSession を使用）
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
+        setUser(session.user);
         const { data: profile } = await supabase
           .from("profiles")
           .select("display_name")
@@ -43,8 +28,27 @@ export function Header() {
           .single();
         setDisplayName(profile?.display_name ?? null);
       } else {
+        setUser(null);
         setDisplayName(null);
       }
+    });
+
+    // 認証状態の変更を監視
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_OUT" || !session?.user) {
+        setUser(null);
+        setDisplayName(null);
+        return;
+      }
+      setUser(session.user);
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", session.user.id)
+        .single();
+      setDisplayName(profile?.display_name ?? null);
     });
 
     return () => subscription.unsubscribe();
@@ -64,8 +68,12 @@ export function Header() {
   }, [showMenu]);
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error(e);
+    }
     window.location.href = "/";
   };
 
