@@ -1,0 +1,42 @@
+/* グローバルスタイル - 掲示板アプリ全体のベーススタイル定義 */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --priority-normal: #22c55e;
+  --priority-important: #eab308;
+  --priority-urgent: #ef4444;
+}
+
+.dark {
+  --priority-normal: #4ade80;
+  --priority-important: #facc15;
+  --priority-urgent: #f87171;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP",
+    "Yu Gothic", "Meiryo", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* セレクトボックスのカスタムスタイル */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+/* 検索入力のクリアボタン（ブラウザデフォルト）を非表示 */
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
