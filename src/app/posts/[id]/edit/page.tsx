@@ -18,7 +18,7 @@ export default async function EditPostPage({
 
   const { data: post, error } = await supabase
     .from("posts")
-    .select("id, author_id, title, body, category, priority, target_company, target_department")
+    .select("id, author_id, title, body, category, priority, target_company, target_department, deadline")
     .eq("id", id)
     .single();
 
@@ -52,6 +52,7 @@ export default async function EditPostPage({
             priority: post.priority,
             target_company: post.target_company,
             target_department: post.target_department,
+            deadline: post.deadline,
           }}
         />
       </div>

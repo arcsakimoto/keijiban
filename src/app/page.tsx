@@ -20,6 +20,7 @@ export default async function HomePage() {
       priority,
       target_company,
       target_department,
+      deadline,
       is_pinned,
       created_at,
       profiles:author_id (display_name, email, company)

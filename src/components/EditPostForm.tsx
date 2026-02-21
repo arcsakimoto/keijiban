@@ -17,6 +17,7 @@ export function EditPostForm({
     priority: Priority;
     target_company?: string | null;
     target_department?: string | null;
+    deadline?: string | null;
   };
 }) {
 
@@ -27,6 +28,7 @@ export function EditPostForm({
     priority: Priority;
     target_company?: string | null;
     target_department?: string | null;
+    deadline?: string | null;
   }) => {
     const supabase = createClient();
 
@@ -45,6 +47,7 @@ export function EditPostForm({
         priority: data.priority,
         target_company: data.target_company || null,
         target_department: data.target_department || null,
+        deadline: data.deadline || null,
       })
       .eq("id", postId)
       .select();

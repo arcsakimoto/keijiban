@@ -51,6 +51,7 @@ export interface Post {
   priority: Priority;
   target_company: string | null;
   target_department: string | null;
+  deadline?: string | null;
   is_pinned?: boolean;
   created_at?: string;
   updated_at?: string;

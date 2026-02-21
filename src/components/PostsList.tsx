@@ -32,6 +32,18 @@ export function PostsList({
     [initialPosts]
   );
 
+  // 締切が2日以内のお知らせを抽出
+  const deadlineSoonPosts = useMemo(() => {
+    const now = new Date();
+    const twoDaysMs = 2 * 24 * 60 * 60 * 1000;
+    return initialPosts.filter((p) => {
+      if (!p.deadline) return false;
+      const dl = new Date(p.deadline);
+      const diff = dl.getTime() - now.getTime();
+      return diff > 0 && diff <= twoDaysMs;
+    });
+  }, [initialPosts]);
+
   // フィルタリング
   const filtered = useMemo(() => {
     let list = [...initialPosts];
@@ -151,6 +163,37 @@ export function PostsList({
                   >
                     {post.title}
                   </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* 締切間近のお知らせバナー */}
+      {deadlineSoonPosts.length > 0 && (
+        <div className="flex items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 dark:border-orange-800/50 dark:bg-orange-950/30">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/50">
+            <svg className="h-4 w-4 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+            </svg>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-orange-800 dark:text-orange-300">
+              締切が近いお知らせが {deadlineSoonPosts.length} 件あります
+            </p>
+            <ul className="mt-1 space-y-0.5">
+              {deadlineSoonPosts.map((post) => (
+                <li key={post.id} className="flex items-center gap-2">
+                  <Link
+                    href={`/posts/${post.id}`}
+                    className="text-sm text-orange-700 underline decoration-orange-300 hover:text-orange-900 hover:decoration-orange-500 dark:text-orange-400 dark:decoration-orange-700 dark:hover:text-orange-200"
+                  >
+                    {post.title}
+                  </Link>
+                  <span className="shrink-0 text-xs text-orange-500 dark:text-orange-400">
+                    （締切: {new Date(post.deadline!).toLocaleString("ja-JP", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}）
+                  </span>
                 </li>
               ))}
             </ul>
@@ -361,6 +404,15 @@ export function PostsList({
                       {post.target_company}
                     </span>
                   )}
+                  {/* 締切日ありバッジ */}
+                  {post.deadline && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-medium text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                      </svg>
+                      締切日あり
+                    </span>
+                  )}
                   <span className="ml-auto text-xs text-gray-400 dark:text-slate-500">
                     {timeAgo(post.created_at)}
                   </span>
@@ -376,8 +428,8 @@ export function PostsList({
                   {post.body}
                 </p>
 
-                {/* 下段：投稿者アバター + 名前 · 会社名 */}
-                <div className="mt-3 flex items-center gap-2">
+                {/* 下段：投稿者アバター + 名前 · 会社名 + 締切日 */}
+                <div className="mt-3 flex items-center gap-2 flex-wrap">
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
                     {getAuthorInitial(post)}
                   </div>
@@ -385,6 +437,27 @@ export function PostsList({
                     {post.profiles?.display_name ?? post.profiles?.email ?? "不明"}
                     {post.profiles?.company && ` · ${post.profiles.company}`}
                   </span>
+                  {post.deadline && (() => {
+                    const deadlineDate = new Date(post.deadline);
+                    const now = new Date();
+                    const isPast = deadlineDate < now;
+                    const diffMs = deadlineDate.getTime() - now.getTime();
+                    const isNear = !isPast && diffMs < 3 * 24 * 60 * 60 * 1000;
+                    return (
+                      <span className={`ml-auto inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                        isPast
+                          ? "bg-gray-100 text-gray-400 line-through dark:bg-slate-700 dark:text-slate-500"
+                          : isNear
+                            ? "bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                            : "bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400"
+                      }`}>
+                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                        </svg>
+                        締切: {deadlineDate.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}
+                      </span>
+                    );
+                  })()}
                 </div>
               </Link>
             </li>

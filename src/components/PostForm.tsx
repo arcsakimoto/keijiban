@@ -12,6 +12,7 @@ type PostFormData = {
   priority: Priority;
   target_company?: string | null;
   target_department?: string | null;
+  deadline?: string | null;
 };
 
 export function PostForm({
@@ -29,6 +30,7 @@ export function PostForm({
   const [priority, setPriority] = useState<Priority>(initial?.priority ?? "normal");
   const [targetCompany, setTargetCompany] = useState(initial?.target_company ?? "");
   const [targetDepartment, setTargetDepartment] = useState(initial?.target_department ?? "");
+  const [deadline, setDeadline] = useState(initial?.deadline ? new Date(initial.deadline).toISOString().slice(0, 16) : "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -48,6 +50,7 @@ export function PostForm({
         priority,
         target_company: targetCompany || null,
         target_department: targetDepartment || null,
+        deadline: deadline ? new Date(deadline).toISOString() : null,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存に失敗しました。");
@@ -177,6 +180,34 @@ export function PostForm({
           className={`${inputClass} resize-y`}
           placeholder="お知らせの内容を入力してください"
         />
+      </div>
+
+      {/* 締切日（任意） */}
+      <div>
+        <label htmlFor="deadline" className={labelClass}>
+          締切日（任意）
+        </label>
+        <div className="flex items-center gap-3">
+          <input
+            id="deadline"
+            type="datetime-local"
+            value={deadline}
+            onChange={(e) => setDeadline(e.target.value)}
+            className={`${inputClass} max-w-xs`}
+          />
+          {deadline && (
+            <button
+              type="button"
+              onClick={() => setDeadline("")}
+              className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200 transition-colors"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+              クリア
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex gap-3 pt-2">

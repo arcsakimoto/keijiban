@@ -35,6 +35,7 @@ export default async function PostDetailPage({
       priority,
       target_company,
       target_department,
+      deadline,
       created_at,
       updated_at,
       profiles:author_id (display_name, email, company)
@@ -134,6 +135,30 @@ export default async function PostDetailPage({
                 </span>
               </div>
             </div>
+
+            {/* 締切日 */}
+            {post.deadline && (() => {
+              const deadlineDate = new Date(post.deadline);
+              const now = new Date();
+              const isPast = deadlineDate < now;
+              const diffMs = deadlineDate.getTime() - now.getTime();
+              const isNear = !isPast && diffMs < 3 * 24 * 60 * 60 * 1000;
+              return (
+                <div className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium ${
+                  isPast
+                    ? "bg-gray-100 text-gray-500 line-through dark:bg-slate-700 dark:text-slate-400"
+                    : isNear
+                      ? "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                      : "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
+                }`}>
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                  </svg>
+                  締切: {deadlineDate.toLocaleString("ja-JP")}
+                  {isPast && " （締切済み）"}
+                </div>
+              );
+            })()}
           </div>
 
           {/* 編集・削除ボタン */}
