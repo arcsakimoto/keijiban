@@ -9,11 +9,26 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: NextRequest) {
   try {
-    // VAPID鍵の設定（リクエスト時に実行）
+    // VAPID鍵の存在チェック
+    if (!process.env.VAPID_SUBJECT || !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+      console.error("通知送信エラー: VAPID環境変数が未設定", {
+        VAPID_SUBJECT: !!process.env.VAPID_SUBJECT,
+        VAPID_PUBLIC_KEY: !!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+        VAPID_PRIVATE_KEY: !!process.env.VAPID_PRIVATE_KEY,
+      });
+      return NextResponse.json({ error: "VAPID鍵が設定されていません" }, { status: 500 });
+    }
+
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("通知送信エラー: SUPABASE_SERVICE_ROLE_KEYが未設定");
+      return NextResponse.json({ error: "サービスキーが設定されていません" }, { status: 500 });
+    }
+
+    // VAPID鍵の設定（環境変数の前後の空白・改行を除去）
     webpush.setVapidDetails(
-      process.env.VAPID_SUBJECT!,
-      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-      process.env.VAPID_PRIVATE_KEY!
+      process.env.VAPID_SUBJECT.trim(),
+      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY.trim(),
+      process.env.VAPID_PRIVATE_KEY.trim()
     );
 
     // ログインチェック（認証されたユーザーのみ通知を送信可能）
@@ -89,7 +104,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ sent, failed });
   } catch (e) {
-    console.error("通知送信APIエラー:", e);
-    return NextResponse.json({ error: "サーバーエラー" }, { status: 500 });
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("通知送信APIエラー:", msg);
+    return NextResponse.json({ error: "サーバーエラー", detail: msg }, { status: 500 });
   }
 }
