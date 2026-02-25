@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { deleteImages } from "@/lib/storageUtils";
 
 export function PostActions({ postId }: { postId: string }) {
   const [deleting, setDeleting] = useState(false);
@@ -22,7 +23,21 @@ export function PostActions({ postId }: { postId: string }) {
         setDeleting(false);
         return;
       }
+
+      // 画像URLを取得してから投稿を削除
+      const { data: post } = await supabase
+        .from("posts")
+        .select("image_urls")
+        .eq("id", postId)
+        .single();
+
       await supabase.from("posts").delete().eq("id", postId);
+
+      // Storage の画像を削除（失敗しても無視）
+      if (post?.image_urls && post.image_urls.length > 0) {
+        await deleteImages(supabase, post.image_urls).catch(() => {});
+      }
+
       window.location.href = "/";
     } catch {
       alert("削除に失敗しました。");

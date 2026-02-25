@@ -428,6 +428,30 @@ export function PostsList({
                   {post.body}
                 </p>
 
+                {/* 画像サムネイル */}
+                {post.image_urls && post.image_urls.length > 0 && (
+                  <div className="mt-3 flex gap-2">
+                    {post.image_urls.slice(0, 3).map((url, idx) => (
+                      <div
+                        key={idx}
+                        className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-gray-100 dark:border-slate-600 dark:bg-slate-700"
+                      >
+                        <img
+                          src={url}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    ))}
+                    {post.image_urls.length > 3 && (
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400">
+                        +{post.image_urls.length - 3}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* 下段：投稿者アバター + 名前 · 会社名 + 締切日 */}
                 <div className="mt-3 flex items-center gap-2 flex-wrap">
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">

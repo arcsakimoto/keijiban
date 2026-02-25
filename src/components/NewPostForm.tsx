@@ -1,26 +1,32 @@
-/* 新規投稿フォーム - お知らせを新規作成（対象会社・部署フィールド対応） */
+/* 新規投稿フォーム - お知らせを新規作成（画像アップロード対応） */
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
 import { PostForm } from "@/components/PostForm";
-import type { Category, Priority } from "@/types/database";
+import type { PostFormData } from "@/components/PostForm";
+import { generateImagePath } from "@/lib/imageUtils";
+import { uploadImage } from "@/lib/storageUtils";
 
 export function NewPostForm() {
 
-  const handleSubmit = async (data: {
-    title: string;
-    body: string;
-    category: Category;
-    priority: Priority;
-    target_company?: string | null;
-    target_department?: string | null;
-    deadline?: string | null;
-  }) => {
+  const handleSubmit = async (data: PostFormData) => {
     const supabase = createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw new Error("ログインしてください");
+
+    // 画像アップロード
+    let imageUrls: string[] = [];
+    if (data.images && data.images.length > 0) {
+      imageUrls = await Promise.all(
+        data.images.map(async (file) => {
+          const path = generateImagePath(user.id);
+          return uploadImage(supabase, file, path);
+        })
+      );
+    }
+
     const { data: newPost, error } = await supabase
       .from("posts")
       .insert({
@@ -32,6 +38,7 @@ export function NewPostForm() {
         target_company: data.target_company || null,
         target_department: data.target_department || null,
         deadline: data.deadline || null,
+        image_urls: imageUrls.length > 0 ? imageUrls : null,
       })
       .select("id")
       .single();

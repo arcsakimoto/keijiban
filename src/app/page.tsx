@@ -22,6 +22,7 @@ export default async function HomePage() {
       target_department,
       deadline,
       is_pinned,
+      image_urls,
       created_at,
       profiles:author_id (display_name, email, company)
     `

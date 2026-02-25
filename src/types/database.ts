@@ -53,6 +53,7 @@ export interface Post {
   target_department: string | null;
   deadline?: string | null;
   is_pinned?: boolean;
+  image_urls?: string[];
   created_at?: string;
   updated_at?: string;
 }

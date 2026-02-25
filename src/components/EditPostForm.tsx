@@ -1,9 +1,12 @@
-/* 投稿編集フォーム - 既存の投稿を更新する（.select()追加でバグ修正済み） */
+/* 投稿編集フォーム - 既存の投稿を更新する（画像アップロード対応） */
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
 import { PostForm } from "@/components/PostForm";
+import type { PostFormData } from "@/components/PostForm";
 import type { Category, Priority } from "@/types/database";
+import { generateImagePath } from "@/lib/imageUtils";
+import { uploadImage, deleteImages } from "@/lib/storageUtils";
 
 export function EditPostForm({
   postId,
@@ -18,18 +21,11 @@ export function EditPostForm({
     target_company?: string | null;
     target_department?: string | null;
     deadline?: string | null;
+    existingImageUrls?: string[];
   };
 }) {
 
-  const handleSubmit = async (data: {
-    title: string;
-    body: string;
-    category: Category;
-    priority: Priority;
-    target_company?: string | null;
-    target_department?: string | null;
-    deadline?: string | null;
-  }) => {
+  const handleSubmit = async (data: PostFormData) => {
     const supabase = createClient();
 
     // 認証トークンを検証・更新してからDB操作を行う
@@ -37,6 +33,28 @@ export function EditPostForm({
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw new Error("ログインしてください。再度ログインしてからお試しください。");
+
+    // 削除された既存画像を Storage から削除
+    const removedUrls = (initial.existingImageUrls ?? []).filter(
+      (url) => !(data.existingImageUrls ?? []).includes(url)
+    );
+    if (removedUrls.length > 0) {
+      await deleteImages(supabase, removedUrls).catch(() => {});
+    }
+
+    // 新規画像のアップロード
+    let newImageUrls: string[] = [];
+    if (data.images && data.images.length > 0) {
+      newImageUrls = await Promise.all(
+        data.images.map(async (file) => {
+          const path = generateImagePath(user.id);
+          return uploadImage(supabase, file, path);
+        })
+      );
+    }
+
+    // 既存（残存）+ 新規を結合
+    const finalImageUrls = [...(data.existingImageUrls ?? []), ...newImageUrls];
 
     const { data: updatedRows, error } = await supabase
       .from("posts")
@@ -48,6 +66,7 @@ export function EditPostForm({
         target_company: data.target_company || null,
         target_department: data.target_department || null,
         deadline: data.deadline || null,
+        image_urls: finalImageUrls.length > 0 ? finalImageUrls : null,
       })
       .eq("id", postId)
       .select();
@@ -64,7 +83,10 @@ export function EditPostForm({
 
   return (
     <PostForm
-      initial={initial}
+      initial={{
+        ...initial,
+        existingImageUrls: initial.existingImageUrls ?? [],
+      }}
       onSubmit={handleSubmit}
       submitLabel="更新する"
     />

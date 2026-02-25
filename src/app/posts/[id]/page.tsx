@@ -36,6 +36,7 @@ export default async function PostDetailPage({
       target_company,
       target_department,
       deadline,
+      image_urls,
       created_at,
       updated_at,
       profiles:author_id (display_name, email, company)
@@ -173,6 +174,33 @@ export default async function PostDetailPage({
             {post.body}
           </div>
         </div>
+
+        {/* 添付画像 */}
+        {post.image_urls && post.image_urls.length > 0 && (
+          <div className="mt-6 border-t border-gray-100 pt-6 dark:border-slate-700">
+            <h3 className="mb-3 text-sm font-medium text-gray-700 dark:text-slate-300">
+              添付画像（{post.image_urls.length}枚）
+            </h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {post.image_urls.map((url: string, index: number) => (
+                <a
+                  key={index}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group relative overflow-hidden rounded-xl border border-gray-200 bg-gray-50 transition-all hover:shadow-lg dark:border-slate-700 dark:bg-slate-700/50"
+                >
+                  <img
+                    src={url}
+                    alt={`添付画像 ${index + 1}`}
+                    className="h-auto w-full object-contain transition-transform group-hover:scale-[1.02]"
+                    loading="lazy"
+                  />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </article>
   );

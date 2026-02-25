@@ -4,8 +4,9 @@
 import { useState } from "react";
 import type { Category, Priority } from "@/types/database";
 import { CATEGORY_LABELS, PRIORITY_LABELS, COMPANY_LIST, DEPARTMENT_LIST } from "@/types/database";
+import { ImageUpload } from "@/components/ImageUpload";
 
-type PostFormData = {
+export type PostFormData = {
   title: string;
   body: string;
   category: Category;
@@ -13,6 +14,8 @@ type PostFormData = {
   target_company?: string | null;
   target_department?: string | null;
   deadline?: string | null;
+  images?: File[];
+  existingImageUrls?: string[];
 };
 
 export function PostForm({
@@ -20,7 +23,7 @@ export function PostForm({
   onSubmit,
   submitLabel,
 }: {
-  initial?: PostFormData;
+  initial?: PostFormData & { existingImageUrls?: string[] };
   onSubmit: (data: PostFormData) => Promise<void>;
   submitLabel: string;
 }) {
@@ -31,8 +34,16 @@ export function PostForm({
   const [targetCompany, setTargetCompany] = useState(initial?.target_company ?? "");
   const [targetDepartment, setTargetDepartment] = useState(initial?.target_department ?? "");
   const [deadline, setDeadline] = useState(initial?.deadline ? new Date(initial.deadline).toISOString().slice(0, 16) : "");
+  const [images, setImages] = useState<File[]>([]);
+  const [existingImageUrls, setExistingImageUrls] = useState<string[]>(initial?.existingImageUrls ?? []);
+  const [removedImageUrls, setRemovedImageUrls] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const handleRemoveExisting = (url: string) => {
+    setRemovedImageUrls((prev) => [...prev, url]);
+    setExistingImageUrls((prev) => prev.filter((u) => u !== url));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +62,8 @@ export function PostForm({
         target_company: targetCompany || null,
         target_department: targetDepartment || null,
         deadline: deadline ? new Date(deadline).toISOString() : null,
+        images,
+        existingImageUrls,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存に失敗しました。");
@@ -208,6 +221,20 @@ export function PostForm({
             </button>
           )}
         </div>
+      </div>
+
+      {/* 画像アップロード */}
+      <div>
+        <label className={labelClass}>
+          画像（最大5枚）
+        </label>
+        <ImageUpload
+          images={images}
+          existingUrls={existingImageUrls}
+          onChange={setImages}
+          onRemoveExisting={handleRemoveExisting}
+          maxImages={5}
+        />
       </div>
 
       <div className="flex gap-3 pt-2">
