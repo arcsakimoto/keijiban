@@ -70,3 +70,20 @@ export const PRIORITY_LABELS: Record<Priority, string> = {
   important: "重要",
   urgent: "緊急",
 };
+
+/* 添付ファイル型 */
+export interface PostAttachment {
+  id: string;
+  post_id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  content_type: string;
+  created_at?: string;
+}
+
+/* PDF制限定数 */
+export const PDF_MAX_SIZE_MB = 10;
+export const PDF_MAX_SIZE_BYTES = PDF_MAX_SIZE_MB * 1024 * 1024;
+export const PDF_ALLOWED_TYPES = ["application/pdf"];
+export const PDF_MAX_COUNT = 3;

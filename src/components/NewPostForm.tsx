@@ -1,4 +1,4 @@
-/* 新規投稿フォーム - お知らせを新規作成（画像アップロード対応） */
+/* 新規投稿フォーム - お知らせを新規作成（画像＋PDF添付対応） */
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
@@ -9,7 +9,7 @@ import { uploadImage } from "@/lib/storageUtils";
 
 export function NewPostForm() {
 
-  const handleSubmit = async (data: PostFormData) => {
+  const handleSubmit = async (data: PostFormData, pdfFiles: File[]) => {
     const supabase = createClient();
     const {
       data: { user },
@@ -43,6 +43,35 @@ export function NewPostForm() {
       .select("id")
       .single();
     if (error) throw new Error(error.message);
+
+    // PDFファイルをSupabase Storageにアップロード
+    if (pdfFiles.length > 0 && newPost) {
+      for (const file of pdfFiles) {
+        const timestamp = Date.now();
+        const filePath = `${user.id}/${newPost.id}/${timestamp}-${file.name}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("post-attachments")
+          .upload(filePath, file, {
+            contentType: file.type,
+            upsert: false,
+          });
+
+        if (uploadError) {
+          console.error("PDF upload error:", uploadError);
+          continue;
+        }
+
+        // メタデータをDBに保存
+        await supabase.from("post_attachments").insert({
+          post_id: newPost.id,
+          file_name: file.name,
+          file_path: filePath,
+          file_size: file.size,
+          content_type: file.type,
+        });
+      }
+    }
 
     // プッシュ通知を全購読者に送信（失敗しても投稿自体は成功させる）
     try {

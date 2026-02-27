@@ -1,4 +1,4 @@
-/* 投稿操作コンポーネント - 編集・削除ボタン（投稿者のみ表示） */
+/* 投稿操作コンポーネント - 編集・削除ボタン（投稿者のみ表示、画像＋PDF添付削除対応） */
 "use client";
 
 import Link from "next/link";
@@ -24,13 +24,26 @@ export function PostActions({ postId }: { postId: string }) {
         return;
       }
 
-      // 画像URLを取得してから投稿を削除
+      // 画像URLを取得
       const { data: post } = await supabase
         .from("posts")
         .select("image_urls")
         .eq("id", postId)
         .single();
 
+      // PDF添付ファイルをStorageから削除
+      const { data: attachments } = await supabase
+        .from("post_attachments")
+        .select("file_path")
+        .eq("post_id", postId);
+
+      if (attachments && attachments.length > 0) {
+        await supabase.storage
+          .from("post-attachments")
+          .remove(attachments.map((a) => a.file_path));
+      }
+
+      // 投稿を削除（CASCADE で post_attachments の行も削除される）
       await supabase.from("posts").delete().eq("id", postId);
 
       // Storage の画像を削除（失敗しても無視）

@@ -1,16 +1,17 @@
-/* 投稿編集フォーム - 既存の投稿を更新する（画像アップロード対応） */
+/* 投稿編集フォーム - 既存の投稿を更新する（画像＋PDF添付対応） */
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
 import { PostForm } from "@/components/PostForm";
 import type { PostFormData } from "@/components/PostForm";
-import type { Category, Priority } from "@/types/database";
+import type { Category, Priority, PostAttachment } from "@/types/database";
 import { generateImagePath } from "@/lib/imageUtils";
 import { uploadImage, deleteImages } from "@/lib/storageUtils";
 
 export function EditPostForm({
   postId,
   initial,
+  initialAttachments,
 }: {
   postId: string;
   initial: {
@@ -23,9 +24,10 @@ export function EditPostForm({
     deadline?: string | null;
     existingImageUrls?: string[];
   };
+  initialAttachments: PostAttachment[];
 }) {
 
-  const handleSubmit = async (data: PostFormData) => {
+  const handleSubmit = async (data: PostFormData, pdfFiles: File[]) => {
     const supabase = createClient();
 
     // 認証トークンを検証・更新してからDB操作を行う
@@ -77,8 +79,53 @@ export function EditPostForm({
       throw new Error("更新に失敗しました。投稿が見つからないか、権限がありません。");
     }
 
+    // 新規PDFファイルをアップロード
+    if (pdfFiles.length > 0) {
+      for (const file of pdfFiles) {
+        const timestamp = Date.now();
+        const filePath = `${user.id}/${postId}/${timestamp}-${file.name}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("post-attachments")
+          .upload(filePath, file, {
+            contentType: file.type,
+            upsert: false,
+          });
+
+        if (uploadError) {
+          console.error("PDF upload error:", uploadError);
+          continue;
+        }
+
+        await supabase.from("post_attachments").insert({
+          post_id: postId,
+          file_name: file.name,
+          file_path: filePath,
+          file_size: file.size,
+          content_type: file.type,
+        });
+      }
+    }
+
     // フルページリロードで確実に更新後の内容を反映
     window.location.href = `/posts/${postId}`;
+  };
+
+  const handleDeleteAttachment = async (attachment: PostAttachment) => {
+    const supabase = createClient();
+
+    // Storageからファイルを削除
+    const { error: storageError } = await supabase.storage
+      .from("post-attachments")
+      .remove([attachment.file_path]);
+    if (storageError) throw new Error("ファイルの削除に失敗しました");
+
+    // DBからメタデータを削除
+    const { error: dbError } = await supabase
+      .from("post_attachments")
+      .delete()
+      .eq("id", attachment.id);
+    if (dbError) throw new Error("添付情報の削除に失敗しました");
   };
 
   return (
@@ -87,7 +134,9 @@ export function EditPostForm({
         ...initial,
         existingImageUrls: initial.existingImageUrls ?? [],
       }}
+      initialAttachments={initialAttachments}
       onSubmit={handleSubmit}
+      onDeleteAttachment={handleDeleteAttachment}
       submitLabel="更新する"
     />
   );

@@ -1,4 +1,4 @@
-/* 編集ページ - 既存のお知らせを編集するフォーム画面 */
+/* 編集ページ - 既存のお知らせを編集するフォーム画面（PDF添付対応） */
 import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
@@ -24,6 +24,13 @@ export default async function EditPostPage({
 
   if (error || !post) notFound();
   if (post.author_id !== user.id) notFound();
+
+  // 既存の添付ファイルを取得
+  const { data: attachments } = await supabase
+    .from("post_attachments")
+    .select("*")
+    .eq("post_id", id)
+    .order("created_at", { ascending: true });
 
   return (
     <div className="space-y-6">
@@ -55,6 +62,7 @@ export default async function EditPostPage({
             deadline: post.deadline,
             existingImageUrls: post.image_urls ?? [],
           }}
+          initialAttachments={attachments ?? []}
         />
       </div>
     </div>

@@ -24,7 +24,8 @@ export default async function HomePage() {
       is_pinned,
       image_urls,
       created_at,
-      profiles:author_id (display_name, email, company)
+      profiles:author_id (display_name, email, company),
+      post_attachments(id)
     `
     )
     .order("created_at", { ascending: false });
@@ -33,6 +34,7 @@ export default async function HomePage() {
   const normalizedPosts = (posts ?? []).map((post: any) => ({
     ...post,
     profiles: Array.isArray(post.profiles) ? post.profiles[0] ?? null : post.profiles,
+    has_attachments: Array.isArray(post.post_attachments) && post.post_attachments.length > 0,
   }));
 
   return (

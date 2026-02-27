@@ -9,6 +9,7 @@ import { CATEGORY_LABELS, PRIORITY_LABELS, COMPANY_LIST } from "@/types/database
 
 type PostWithProfile = Post & {
   profiles?: { display_name: string | null; email: string; company: string | null } | null;
+  has_attachments?: boolean;
 };
 
 export function PostsList({
@@ -411,6 +412,15 @@ export function PostsList({
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
                       </svg>
                       締切日あり
+                    </span>
+                  )}
+                  {/* PDF添付ありバッジ */}
+                  {post.has_attachments && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13" />
+                      </svg>
+                      PDF
                     </span>
                   )}
                   <span className="ml-auto text-xs text-gray-400 dark:text-slate-500">
