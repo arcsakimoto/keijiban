@@ -81,9 +81,10 @@ export function EditPostForm({
 
     // 新規PDFファイルをアップロード
     if (pdfFiles.length > 0) {
+      const uploadErrors: string[] = [];
       for (const file of pdfFiles) {
-        const timestamp = Date.now();
-        const filePath = `${user.id}/${postId}/${timestamp}-${file.name}`;
+        const ext = file.name.split(".").pop() || "pdf";
+        const filePath = `${user.id}/${postId}/${crypto.randomUUID()}.${ext}`;
 
         const { error: uploadError } = await supabase.storage
           .from("post-attachments")
@@ -94,16 +95,26 @@ export function EditPostForm({
 
         if (uploadError) {
           console.error("PDF upload error:", uploadError);
+          uploadErrors.push(`${file.name}: ${uploadError.message}`);
           continue;
         }
 
-        await supabase.from("post_attachments").insert({
+        const { error: dbError } = await supabase.from("post_attachments").insert({
           post_id: postId,
           file_name: file.name,
           file_path: filePath,
           file_size: file.size,
           content_type: file.type,
         });
+
+        if (dbError) {
+          console.error("PDF metadata save error:", dbError);
+          uploadErrors.push(`${file.name}: メタデータ保存失敗`);
+        }
+      }
+
+      if (uploadErrors.length > 0) {
+        throw new Error(`PDF添付に失敗しました: ${uploadErrors.join(", ")}`);
       }
     }
 
